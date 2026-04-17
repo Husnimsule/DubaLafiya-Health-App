@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "Patient": {
+      "title": "Patient",
+      "description": "Patient record for diagnosis and treatment tracking",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Patient name" },
+        "age": { "type": "number", "description": "Patient age" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "location": { "type": "string", "description": "Patient village/location" },
+        "symptoms": { "type": "array", "items": { "type": "string" } },
+        "diagnosis": { "type": "string", "description": "AI suggested diagnosis" },
+        "recommendedActions": { "type": "string", "description": "AI recommended treatments" },
+        "status": { "type": "string", "enum": ["consult", "treated", "referred"] },
+        "isVaccinated": { "type": "boolean", "description": "Whether the patient is vaccinated" },
+        "isPregnant": { "type": "boolean", "description": "Whether the patient is pregnant (for females of childbearing age)" },
+        "immunizationUpToDate": { "type": "boolean", "description": "Whether immunization is up to date (for children under 5)" },
+        "chvId": { "type": "string", "description": "UID of the Community Health Volunteer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "imageUrl": { "type": "string", "description": "Optional image URL for vision analysis" }
+      },
+      "required": ["name", "age", "gender", "location", "symptoms", "chvId", "createdAt"]
+    },
+    "Outbreak": {
+      "title": "Outbreak",
+      "description": "Aggregated data for disease outbreak detection",
+      "type": "object",
+      "properties": {
+        "disease": { "type": "string" },
+        "location": { "type": "string" },
+        "count": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "severity": { "type": "string", "enum": ["low", "medium", "high"] }
+      },
+      "required": ["disease", "location", "count", "lastUpdated"]
+    },
+    "Resource": {
+      "title": "Resource",
+      "description": "Educational material for CHVs",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["title", "content", "category"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Messages sent between CHVs",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "Message content" },
+        "authorId": { "type": "string", "description": "UID of the message sender" },
+        "authorName": { "type": "string", "description": "Name of the message sender" },
+        "authorPhoto": { "type": "string", "description": "Photo URL of the message sender" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "authorId", "authorName", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/patients/{patientId}": {
+      "schema": "Patient",
+      "description": "Individual patient records"
+    },
+    "/outbreaks/{outbreakId}": {
+      "schema": "Outbreak",
+      "description": "Aggregated outbreak data"
+    },
+    "/resources/{resourceId}": {
+      "schema": "Resource",
+      "description": "Educational resources"
+    },
+    "/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Real-time chat messages"
+    }
+  }
+}

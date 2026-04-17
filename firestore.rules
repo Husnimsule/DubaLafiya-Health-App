@@ -1,0 +1,131 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: patients
+// Document ID: auto-generated
+// Fields:
+//   - name: string (required, 1-100 chars)
+//   - age: number (required, 0-120)
+//   - gender: string (required, enum: ['male', 'female', 'other'])
+//   - location: string (required, 1-200 chars)
+//   - symptoms: list (required, strings)
+//   - diagnosis: string (required)
+//   - urgency: string (required, enum: ['low', 'medium', 'high', 'emergency'])
+//   - recommendedActions: string (optional)
+//   - chvId: string (required, matches auth.uid)
+//   - createdAt: timestamp (required)
+//   - status: string (required, enum: ['consult', 'treated', 'referred'])
+//
+// Collection: outbreaks
+// Document ID: auto-generated
+// Fields:
+//   - disease: string (required)
+//   - location: string (required)
+//   - count: number (required)
+//   - severity: string (required, enum: ['low', 'medium', 'high'])
+//   - lastUpdated: timestamp (required)
+//
+// Collection: resources
+// Document ID: auto-generated
+// Fields:
+//   - title: string (required)
+//   - content: string (required)
+//   - category: string (required)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         request.auth.token.email == "husniyasule2m@gmail.com");
+    }
+
+    function isValidPatient(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.age is number && data.age >= 0 && data.age <= 120 &&
+             data.gender in ['male', 'female', 'other'] &&
+             data.location is string && data.location.size() > 0 &&
+             data.symptoms is list &&
+             data.diagnosis is string &&
+             data.urgency in ['low', 'medium', 'high', 'emergency'] &&
+             data.status in ['consult', 'treated', 'referred'] &&
+             data.isVaccinated is bool &&
+             (!('isPregnant' in data) || data.isPregnant is bool) &&
+             (!('immunizationUpToDate' in data) || data.immunizationUpToDate is bool) &&
+             (!('recommendedActions' in data) || data.recommendedActions is string) &&
+             data.chvId is string;
+    }
+
+    function isValidPatientCreate(data) {
+      return isValidPatient(data) && data.chvId == request.auth.uid;
+    }
+
+    function isValidPatientUpdate(data, existingData) {
+      return isValidPatient(data) && 
+             (data.chvId == existingData.chvId || isAdmin()) &&
+             data.chvId == existingData.chvId; // chvId should be immutable
+    }
+
+    function isValidOutbreak(data) {
+      return data.disease is string && data.location is string &&
+             data.count is number && data.count >= 0 &&
+             data.severity in ['low', 'medium', 'high'];
+    }
+
+    function isValidMessage(data) {
+      return data.text is string && data.text.size() > 0 && data.text.size() <= 1000 &&
+             data.authorId == request.auth.uid &&
+             data.authorName is string &&
+             data.createdAt == request.time;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidMessage(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    match /patients/{patientId} {
+      allow read: if isAuthenticated() && (resource.data.chvId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidPatientCreate(request.resource.data) && request.resource.data.createdAt == request.time;
+      allow update: if isAuthenticated() && (resource.data.chvId == request.auth.uid || isAdmin()) && isValidPatientUpdate(request.resource.data, resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /outbreaks/{outbreakId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /resources/{resourceId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}

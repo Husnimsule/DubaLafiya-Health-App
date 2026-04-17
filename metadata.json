@@ -1,0 +1,8 @@
+{
+  "name": "Remix: DubaLafiya Health App",
+  "description": "AI-powered healthcare assistant for Community Health Volunteers in rural areas, featuring symptom diagnosis, image analysis, and outbreak detection.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
